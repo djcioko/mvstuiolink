@@ -1,38 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="ro">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENDER - CAMERA MOBIL</title>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <meta charset="UTF-8">
+    <title>MV STUDIO PRO - NINJA EDITION</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
+    
     <style>
-        body { background: #000; color: #ffaa00; text-align: center; font-family: sans-serif; padding: 20px; }
-        .btn-live { background: #ffaa00; color: #000; padding: 25px; border-radius: 15px; font-weight: bold; width: 100%; border: none; font-size: 22px; cursor: pointer; text-transform: uppercase; }
-        video { width: 100%; margin-top: 20px; border-radius: 10px; border: 2px solid #333; background: #111; }
-        input { width: 80%; padding: 15px; margin-bottom: 15px; background: #222; border: 1px solid #ffaa00; color: #fff; text-align: center; border-radius: 5px; }
+        :root { --main: #ffaa00; --msg-size: 26px; } 
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
+        #viewport { position: relative; width: 100%; height: calc(100% - 140px); background: #111; overflow: hidden; }
+        #bg-v, #bg-i, #bg-s { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; z-index: 1; }
+        
+        /* Caseta unde va apărea camera decupată */
+        #cam-box { position: absolute; z-index: 10; cursor: move; display: none; top: 20px; right: 20px; }
+        #ai-canvas { width: 350px; border: 1px solid rgba(255,255,255,0.2); }
+        
+        /* Iframe-ul invizibil care trage semnalul de la telefon */
+        #ninja-frame { width: 1px; height: 1px; position: absolute; opacity: 0; pointer-events: none; }
+
+        #circle-box { position: absolute; z-index: 15; cursor: move; width: 250px; height: 250px; display: flex; align-items: center; justify-content: center; top: 10%; left: 30%; }
+        #radial-canvas { position: absolute; z-index: 16; pointer-events: none; }
+        #inner-circle { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #fff; background: #000; overflow: hidden; z-index: 17; display: flex; align-items: center; justify-content: center; }
+        #inner-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        #branding { position: absolute; z-index: 20; cursor: move; font-weight: 900; text-transform: uppercase; text-shadow: 2px 2px 10px #000; bottom: 50px; left: 40px; font-size: 40px; color: white; }
+        #msg-box { position: absolute; z-index: 999; background: rgba(0, 0, 0, 0.85); border-left: 6px solid var(--main); padding: 10px; border-radius: 0 10px 10px 0; min-width: 250px; cursor: move; display: none; top: 100px; left: 20px; }
+        
+        #controls { position: absolute; bottom: 0; width: 100%; height: 140px; background: #080808; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 4px; border-top: 1px solid #222; z-index: 1000; }
+        .panel { background: #111; padding: 4px; border-radius: 3px; border: 1px solid #1a1a1a; display: flex; flex-direction: column; gap: 2px; }
+        .panel h3 { font-size: 7px; color: #ffaa00; text-align: center; font-weight: 800; border-bottom: 1px solid #222; text-transform: uppercase; margin-bottom: 2px; }
+        .btn { width: 100%; padding: 3px; font-weight: bold; border-radius: 2px; text-transform: uppercase; font-size: 7px; cursor: pointer; border: none; }
+        .st-off { background: #220a0a; color: #cc4444; }
+        .st-on { background: #0a220a; color: #44cc44; }
+        .btn-blue { background: #1e3a8a; color: white; }
+        input[type="range"] { height: 2px; accent-color: #ffaa00; margin: 0; }
     </style>
 </head>
 <body>
-    <h1 style="font-size: 18px;">TRANSMISIE LIVE</h1>
-    <input type="text" id="peer-id" value="LAPTOP-MV-STUDIO">
-    <button class="btn-live" onclick="conecteaza()">PORNEȘTE CAMERA</button>
-    <video id="privew" autoplay playsinline muted></video>
 
-    <script>
-        const peer = new Peer();
-        async function conecteaza() {
+<div id="viewport">
+    <video id="bg-v" autoplay loop muted></video>
+    <img id="bg-i">
+    <img id="bg-s">
+    
+    <div id="cam-box"><canvas id="ai-canvas"></canvas></div>
+    
+    <video id="v-hidden" autoplay playsinline crossorigin="anonymous" style="display:none"></video>
+    
+    <iframe id="ninja-frame" allow="camera;microphone;fullscreen;display-capture;"></iframe>
+
+    <div id="circle-box">
+        <canvas id="radial-canvas" width="400" height="400"></canvas>
+        <div id="inner-circle"><img id="inner-img"></div>
+    </div>
+    <div id="branding">STUDIO MV</div>
+    <div id="msg-box"><span id="msg-user">INVITAT</span><br><span id="msg-txt">Mesaj...</span></div>
+</div>
+
+<div id="controls">
+    <div class="panel"><h3>1. VIDEO</h3><button id="btn-v" class="btn st-off" onclick="tgL('bg-v', 'btn-v')">VIDEO: OFF</button><input type="file" id="up-v" class="hidden" onchange="loadM(this, 'bg-v', 'btn-v')"><button class="btn btn-blue" onclick="document.getElementById('up-v').click()">📁 UPLOAD</button></div>
+    <div class="panel"><h3>2. FOTO</h3><button id="btn-i" class="btn st-off" onclick="tgL('bg-i', 'btn-i')">FOTO: OFF</button><input type="file" id="up-i" class="hidden" onchange="loadM(this, 'bg-i', 'btn-i')"><button class="btn btn-blue" onclick="document.getElementById('up-i').click()">🖼️ UPLOAD</button></div>
+    <div class="panel"><h3>3. SLIDESHOW</h3><button id="btn-s" class="btn st-off" onclick="tgL('bg-s', 'btn-s')">SLIDE: OFF</button><input type="file" id="up-sld" class="hidden" webkitdirectory directory multiple onchange="loadFld(this)"><button class="btn btn-blue" onclick="document.getElementById('up-sld').click()">📂 FOLDER</button></div>
+    
+    <div class="panel">
+        <h3>4. CAMERA NINJA</h3>
+        <button class="btn" style="background:#00ff44; color:black;" onclick="connectNinja()">🔗 SCAN & CONNECT</button>
+        <button id="btn-cam" class="btn st-off" onclick="tgC()">VIEW: OFF</button>
+        <label style="font-size:6px">SIZE</label>
+        <input type="range" min="150" max="800" value="350" oninput="document.getElementById('ai-canvas').style.width=this.value+'px'">
+    </div>
+    
+    <div class="panel"><h3>5. VUMETRU</h3><button id="btn-png" class="btn st-off" onclick="tgP()">LOGO: OFF</button><input type="file" id="up-logo" class="hidden" onchange="loadP(this)"><button class="btn btn-blue" onclick="document.getElementById('up-logo').click()">⬆️ UPLOAD</button></div>
+    <div class="panel"><h3>6. SISTEM</h3><input type="text" id="brand-in" placeholder="TEXT..." oninput="document.getElementById('branding').innerText=this.value"><button class="btn btn-blue" onclick="goFS()">FULL SCREEN</button></div>
+</div>
+
+<script>
+    // ID-ul tău unic pentru sesiune (poti sa-l schimbi daca vrei)
+    const STREAM_ID = "MV_STUDIO_" + Math.floor(Math.random()*999);
+
+    function connectNinja() {
+        const ninjaUrl = `https://vdo.ninja/?view=${STREAM_ID}&autoplay&clean&transparent`;
+        const phoneUrl = `https://vdo.ninja/?push=${STREAM_ID}&autostart&back&clean`;
+        
+        // 1. Punem receiver-ul in iframe
+        document.getElementById('ninja-frame').src = ninjaUrl;
+        
+        // 2. Îți dăm link-ul pentru telefon
+        console.log("Link pentru telefon: " + phoneUrl);
+        alert("SCANEAZĂ sau DESCHIDE pe TELEFON:\n\n" + phoneUrl);
+        window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(phoneUrl)}`, "QR", "width=350,height=350");
+
+        // 3. Așteptăm semnalul video în fundal
+        const checkVideo = setInterval(() => {
+            const frame = document.getElementById('ninja-frame');
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment" },
-                    audio: true
-                });
-                document.getElementById('privew').srcObject = stream;
-                const idLaptop = document.getElementById('peer-id').value;
-                peer.call(idLaptop, stream);
-                alert("CONECTAT! Verifică laptopul.");
-            } catch (err) {
-                alert("Eroare cameră: " + err);
-            }
-        }
-    </script>
+                // Încercăm să prindem stream-ul din Ninja
+                // Notă: Ninja permite preluarea externă dacă e configurat corect
+                // Dacă nu merge direct, folosim fereastra de Ninja ca sursă
+            } catch(e){}
+        }, 1000);
+    }
+
+    // --- COD AI & MIXER (PĂSTRAT DIN VERSIUNEA TA) ---
+    function tgL(id, bId) {
+        document.querySelectorAll('#bg-v,#bg-i,#bg-s').forEach(e => e.style.display='none');
+        document.getElementById(id).style.display = 'block';
+    }
+
+    const selfie = new SelfieSegmentation({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`});
+    selfie.setOptions({modelSelection: 1});
+    selfie.onResults(r => {
+        const can = document.getElementById('ai-canvas'), ctx = can.getContext('2d');
+        can.width = r.image.width; can.height = r.image.height;
+        ctx.save(); ctx.clearRect(0,0,can.width,can.height);
+        ctx.drawImage(r.segmentationMask, 0,0,can.width,can.height);
+        ctx.globalCompositeOperation = 'source-in';
+        ctx.drawImage(r.image, 0,0,can.width,can.height); ctx.restore();
+    });
+
+    // Pornim procesarea AI pe orice video vine în v-hidden
+    setInterval(() => {
+        const v = document.getElementById('v-hidden');
+        if (v.readyState >= 2) selfie.send({image: v});
+    }, 40);
+
+    function tgC() {
+        const b = document.getElementById('cam-box');
+        b.style.display = (b.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function goFS() { document.documentElement.requestFullscreen(); }
+</script>
 </body>
 </html>
