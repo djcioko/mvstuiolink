@@ -2,65 +2,60 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <title>MV STUDIO - NINJA ROOM CONNECTOR</title>
+    <title>MV STUDIO - JITSI AI MIXER</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
         #viewport { position: relative; width: 100%; height: calc(100% - 150px); background: #111; display: flex; align-items: center; justify-content: center; }
         #cam-box { position: absolute; z-index: 10; }
-        #ai-canvas { width: 450px; border: 2px solid #ffaa00; background: #000; border-radius: 15px; }
+        #ai-canvas { width: 500px; border: 3px solid #ffaa00; background: #000; border-radius: 20px; box-shadow: 0 0 20px rgba(255,170,0,0.3); }
         
-        /* Iframe-ul Ninja - ascuns dar funcțional */
-        #ninja-container { position: absolute; top: 10px; right: 10px; width: 200px; height: 150px; border: 1px solid #333; z-index: 5; display:none; }
-        #ninja-frame { width: 100%; height: 100%; border: none; }
+        /* Fereastra Jitsi - o punem mică într-un colț pentru previzualizare */
+        #jitsi-container { position: absolute; top: 10px; right: 10px; width: 250px; height: 180px; border: 1px solid #333; z-index: 5; background: #000; }
+        #jitsi-frame { width: 100%; height: 100%; border: none; }
 
-        #controls { position: absolute; bottom: 0; width: 100%; height: 150px; background: #0a0a0a; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; border-top: 2px solid #222; }
-        .panel { background: #111; border: 1px solid #333; padding: 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px; }
-        input { background: #000; border: 1px solid #ffaa00; color: #fff; padding: 10px; text-align: center; border-radius: 4px; }
-        .btn { padding: 12px; font-weight: bold; cursor: pointer; border: none; border-radius: 5px; text-transform: uppercase; }
+        #controls { position: absolute; bottom: 0; width: 100%; height: 150px; background: #0a0a0a; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px; border-top: 2px solid #222; }
+        .panel { background: #111; border: 1px solid #333; padding: 15px; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+        .btn { padding: 15px; font-weight: bold; cursor: pointer; border: none; border-radius: 8px; text-transform: uppercase; font-size: 12px; transition: 0.3s; }
         .btn-green { background: #00ff44; color: #000; }
+        .btn-green:hover { background: #00cc33; }
         .btn-blue { background: #1e3a8a; color: #fff; }
+        .btn-blue:hover { background: #172e6d; }
     </style>
 </head>
 <body>
 
 <div id="viewport">
     <div id="cam-box"><canvas id="ai-canvas"></canvas></div>
-    <div style="position:absolute; bottom:20px; left:20px; font-size:30px; font-weight:900; color:#444;">NINJA ROOM AI</div>
+    <div style="position:absolute; top:20px; left:20px; font-size:20px; font-weight:bold; color:#ffaa00;">LIVE STUDIO: JITSI MODE</div>
 </div>
 
-<div id="ninja-container">
-    <iframe id="ninja-frame" allow="camera;microphone;fullscreen;display-capture;"></iframe>
+<div id="jitsi-container">
+    <iframe id="jitsi-frame" src="https://meet.jit.si/mvstudio" allow="camera;microphone;fullscreen;display-capture;"></iframe>
 </div>
 
 <div id="controls">
     <div class="panel">
-        <h3 style="color:#ffaa00; font-size:12px;">1. NUME CAMERĂ (ROOM)</h3>
-        <input type="text" id="room-name" placeholder="Ex: camera_mea_123">
-        <button class="btn btn-green" onclick="connectRoom()">CONECTEAZĂ LA ROOM</button>
+        <button class="btn btn-green" onclick="startAI()">1. PORNEȘTE DECUPAREA AI</button>
+        <p style="font-size:10px; color:#666; text-align:center;">Apasă și alege fereastra Jitsi din dreapta sus.</p>
     </div>
     
     <div class="panel">
-        <h3 style="color:#ffaa00; font-size:12px;">2. ACTIVARE AI</h3>
-        <button class="btn btn-blue" onclick="startDecupare()">PORNEȘTE DECUPAREA</button>
-        <input type="range" min="200" max="800" value="450" oninput="document.getElementById('ai-canvas').style.width=this.value+'px'">
+        <label style="font-size:11px; color:#aaa; margin-bottom:5px;">ZOOM PERSONAJ</label>
+        <input type="range" min="300" max="900" value="500" oninput="document.getElementById('ai-canvas').style.width=this.value+'px'">
     </div>
 
     <div class="panel">
-        <h3 style="color:#ffaa00; font-size:12px;">3. INSTRUCȚIUNI</h3>
-        <p style="font-size:10px; color:#888;">Scrie numele camerei creată în VDO.Ninja, apasă Conectează, apoi Pornește Decuparea și alege ecranul.</p>
+        <button class="btn btn-blue" onclick="document.documentElement.requestFullscreen()">FULL SCREEN MIXER</button>
+        <button class="btn btn-blue" style="background:#444;" onclick="toggleJitsi()">ASCUNDE PREVIEW JITSI</button>
     </div>
 </div>
 
 <script>
-    function connectRoom() {
-        const room = document.getElementById('room-name').value;
-        if(!room) return alert("Scrie numele camerei!");
-        // Ne conectăm la room ca "view" (spectator) ca să vedem ce trimite telefonul
-        const url = `https://vdo.ninja/?room=${room}&view&autoplay=1&clean=1`;
-        document.getElementById('ninja-frame').src = url;
-        document.getElementById('ninja-container').style.display = "block";
+    function toggleJitsi() {
+        const c = document.getElementById('jitsi-container');
+        c.style.display = c.style.display === 'none' ? 'block' : 'none';
     }
 
     const selfie = new SelfieSegmentation({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`});
@@ -75,10 +70,13 @@
         ctx.drawImage(r.image, 0,0,can.width,can.height); ctx.restore();
     });
 
-    async function startDecupare() {
+    async function startAI() {
         try {
-            // Aceasta este singura metodă sigură prin care browserul "vede" imaginea din Ninja
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            // Pasul magic: Capturăm fereastra Jitsi care rulează deja în colț
+            const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                video: { cursor: "never" },
+                audio: false 
+            });
             const v = document.createElement('video');
             v.srcObject = stream;
             v.play();
@@ -89,7 +87,9 @@
                 };
                 run();
             };
-        } catch(e) { alert("Trebuie să permiți captura ecranului!"); }
+        } catch(e) { 
+            alert("Eroare: Trebuie să selectezi o fereastră pentru captură!"); 
+        }
     }
 </script>
 </body>
