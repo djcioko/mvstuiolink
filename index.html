@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LINK TRANSMISIE</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        body { background: #000; color: #444; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #preview { width: 60%; border-radius: 10px; border: 1px solid #111; margin-bottom: 20px; opacity: 0.5; }
+        .btn { background: #111; color: #666; border: 1px solid #222; padding: 15px 30px; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .btn:active { color: #ffaa00; border-color: #ffaa00; }
+        input { background: #0a0a0a; border: 1px solid #222; color: #fff; padding: 12px; text-align: center; margin-bottom: 10px; border-radius: 5px; outline: none; }
+    </style>
+</head>
+<body>
+    <video id="preview" autoplay playsinline muted></video>
+    <input type="text" id="target-id" placeholder="COD RECEPTOR (LAPTOP)">
+    <button class="btn" onclick="connect()">LANSEAZĂ SEMNAL</button>
+    <div id="status" style="font-size: 10px; margin-top: 10px;">ID MEU: <span id="my-id">...</span></div>
+
+    <script>
+        const peer = new Peer();
+        let stream;
+
+        peer.on('open', id => document.getElementById('my-id').innerText = id);
+
+        async function connect() {
+            const targetId = document.getElementById('target-id').value;
+            if(!targetId) return alert("Introdu codul de pe laptop!");
+
+            stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: true });
+            document.getElementById('preview').srcObject = stream;
+
+            const call = peer.call(targetId, stream);
+            call.on('stream', () => {
+                document.getElementById('status').innerText = "CONEXIUNE ACTIVĂ";
+            });
+        }
+    </script>
+</body>
+</html>
