@@ -1,37 +1,36 @@
-<!DOCTYPE html> 
-<html lang="ro">
+<!DOCTYPE html>
+<html>
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TELEFON - TRANSMISIE</title>
+    <title>SENDER - CAMERA MOBIL</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
-        body { background: #000; color: #ffaa00; font-family: sans-serif; text-align: center; padding: 20px; }
-        .btn-send { background: #ffaa00; color: #000; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 90%; font-size: 18px; cursor: pointer; margin-bottom: 20px; }
-        video { width: 100%; border-radius: 15px; border: 2px solid #333; background: #111; transform: scaleX(-1); }
-        input { background: #222; border: 1px solid #444; color: #fff; padding: 10px; width: 80%; text-align: center; margin-bottom: 10px; border-radius: 5px; }
+        body { background: #000; color: #ffaa00; text-align: center; font-family: sans-serif; padding: 20px; }
+        .btn-live { background: #ffaa00; color: #000; padding: 25px; border-radius: 15px; font-weight: bold; width: 100%; border: none; font-size: 22px; cursor: pointer; text-transform: uppercase; }
+        video { width: 100%; margin-top: 20px; border-radius: 10px; border: 2px solid #333; background: #111; }
+        input { width: 80%; padding: 15px; margin-bottom: 15px; background: #222; border: 1px solid #ffaa00; color: #fff; text-align: center; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <h2 style="margin-bottom: 10px;">CAMERA LIVE</h2>
-    <input type="text" id="target-id" value="LAPTOP-MV-STUDIO">
-    <button class="btn-send" onclick="startBroadcasting()">PORNEȘTE CAMERA ȘI TRIMITE</button>
-    <video id="preview" autoplay playsinline muted></video>
+    <h1 style="font-size: 18px;">TRANSMISIE LIVE</h1>
+    <input type="text" id="peer-id" value="LAPTOP-MV-STUDIO">
+    <button class="btn-live" onclick="conecteaza()">PORNEȘTE CAMERA</button>
+    <video id="privew" autoplay playsinline muted></video>
 
     <script>
         const peer = new Peer();
-        async function startBroadcasting() {
+        async function conecteaza() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment" }, // Folosește camera de pe spate
+                    video: { facingMode: "environment" },
                     audio: true
                 });
-                document.getElementById('preview').srcObject = stream;
-                const destId = document.getElementById('target-id').value;
-                peer.call(destId, stream);
-                alert("Semnalul a fost trimis către laptop!");
-            } catch (e) {
-                alert("Eroare: " + e);
+                document.getElementById('privew').srcObject = stream;
+                const idLaptop = document.getElementById('peer-id').value;
+                peer.call(idLaptop, stream);
+                alert("CONECTAT! Verifică laptopul.");
+            } catch (err) {
+                alert("Eroare cameră: " + err);
             }
         }
     </script>
