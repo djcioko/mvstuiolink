@@ -2,75 +2,44 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <title>MV STUDIO PRO - LIVE HUB</title>
+    <title>MV STUDIO - RECEPTOR ACTIV</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
-        :root { --main: #ffaa00; }
-        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
-        #viewport { position: relative; width: 100%; height: calc(100% - 140px); background: #111; }
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
+        #viewport { position: relative; width: 100%; height: calc(100vh - 140px); background: #111; }
         #cam-box { position: absolute; z-index: 10; top: 20px; right: 20px; }
-        #ai-canvas { width: 350px; border: 1px solid var(--main); }
-        #controls { position: absolute; bottom: 0; width: 100%; height: 140px; background: #080808; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 5px; border-top: 1px solid #222; }
-        .panel { background: #111; border: 1px solid #222; padding: 5px; display: flex; flex-direction: column; gap: 4px; }
-        .panel h3 { font-size: 8px; color: var(--main); text-align: center; text-transform: uppercase; margin-bottom: 2px; }
-        .btn { width: 100%; padding: 5px; font-weight: bold; border-radius: 4px; font-size: 8px; cursor: pointer; border: none; text-transform: uppercase; }
-        .btn-blue { background: #1e3a8a; color: white; }
-        .btn-orange { background: var(--main); color: black; }
-        .st-off { background: #220a0a; color: #cc4444; }
-        .st-on { background: #0a220a; color: #44cc44; }
+        #ai-canvas { width: 400px; border: 2px solid #ffaa00; border-radius: 10px; }
+        #controls { height: 140px; background: #080808; display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 10px; border-top: 1px solid #222; }
+        .panel { background: #111; border: 1px solid #222; padding: 5px; text-align: center; }
+        .btn { width: 100%; padding: 10px; font-weight: bold; font-size: 10px; cursor: pointer; border: none; text-transform: uppercase; border-radius: 5px; }
+        .btn-active { background: #ffaa00; color: #000; }
+        .btn-wait { background: #1e3a8a; color: white; }
     </style>
 </head>
 <body>
-
-<div id="viewport">
-    <div id="cam-box"><canvas id="ai-canvas"></canvas></div>
-    <video id="v-remote" autoplay playsinline style="display:none"></video>
-    <div style="position:absolute; bottom:20px; left:20px; font-size:30px; font-weight:900;">STUDIO MV LINK</div>
-</div>
-
-<div id="controls">
-    <div class="panel"><h3>1. VIDEO</h3><button class="btn btn-blue">UPLOAD VIDEO</button></div>
-    <div class="panel"><h3>2. FOTO</h3><button class="btn btn-blue">UPLOAD FOTO</button></div>
-    <div class="panel"><h3>3. SLIDE</h3><button class="btn btn-blue">FOLDER SLIDE</button></div>
-    
-    <div class="panel">
-        <h3>4. REMOTE CAMERA</h3>
-        <button id="btn-listen" class="btn btn-orange" onclick="startReceiver()">ACTIVATE RECEIVER</button>
-        <button id="btn-view" class="btn st-off">VIEW: OFF</button>
+    <div id="viewport">
+        <div id="cam-box"><canvas id="ai-canvas"></canvas></div>
+        <video id="v-remote" autoplay playsinline style="display:none"></video>
+        <div style="position:absolute; bottom:30px; left:30px; font-size:50px; font-weight:900; color:white; text-shadow: 2px 2px 10px #000;">STUDIO MV LINK</div>
     </div>
-    
-    <div class="panel"><h3>5. VUMETRU</h3><button class="btn btn-blue">UPLOAD PNG</button></div>
-    <div class="panel"><h3>6. SISTEM</h3><button class="btn btn-blue" onclick="document.documentElement.requestFullscreen()">FULL SCREEN</button></div>
-</div>
+    <div id="controls">
+        <div class="panel"><h3>VIDEO</h3><button class="btn btn-wait">UPLOAD</button></div>
+        <div class="panel"><h3>FOTO</h3><button class="btn btn-wait">UPLOAD</button></div>
+        <div class="panel"><h3>CAMERA REMOTE</h3>
+            <button id="btn-status" class="btn btn-active" onclick="startReceiver()">1. ACTIVEAZĂ RECEPTOR</button>
+        </div>
+        <div class="panel"><h3>STATUS</h3><div id="stat-text" style="font-size:10px; color:#ffaa00;">Așteptare...</div></div>
+        <div class="panel"><h3>VUMETRU</h3><button class="btn btn-wait">LOGO</button></div>
+        <div class="panel"><h3>SISTEM</h3><button class="btn btn-wait" onclick="document.documentElement.requestFullscreen()">FULLSCREEN</button></div>
+    </div>
 
 <script>
-    // ID FIX PENTRU RECEPTOR
     const peer = new Peer('LAPTOP-MV-STUDIO'); 
-
-    function startReceiver() {
-        alert("RECEPTOR ACTIVAT! Aștept semnalul de la telefon...");
-        document.getElementById('btn-listen').innerText = "LISTENING...";
-        document.getElementById('btn-listen').className = "btn st-on";
-        
-        peer.on('call', call => {
-            call.answer();
-            call.on('stream', remoteStream => {
-                const v = document.getElementById('v-remote');
-                v.srcObject = remoteStream;
-                v.play();
-                document.getElementById('btn-view').className = "btn st-on";
-                document.getElementById('btn-view').innerText = "VIEW: ON";
-                // Pornim AI-ul pe imaginea primita
-                const pred = async () => { await selfie.send({image: v}); requestAnimationFrame(pred); }; 
-                pred();
-            });
-        });
-    }
-
     const selfie = new SelfieSegmentation({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`});
     selfie.setOptions({modelSelection: 1});
+
     selfie.onResults(r => {
         const can = document.getElementById('ai-canvas'), ctx = can.getContext('2d');
         can.width = r.image.width; can.height = r.image.height;
@@ -79,6 +48,23 @@
         ctx.globalCompositeOperation = 'source-in';
         ctx.drawImage(r.image, 0,0,can.width,can.height); ctx.restore();
     });
+
+    function startReceiver() {
+        document.getElementById('stat-text').innerText = "RECEPTOR PORNIT. ID: LAPTOP-MV-STUDIO";
+        document.getElementById('btn-status').style.background = "#00ff44";
+        
+        peer.on('call', call => {
+            call.answer();
+            call.on('stream', stream => {
+                const v = document.getElementById('v-remote');
+                v.srcObject = stream;
+                v.play();
+                document.getElementById('stat-text').innerText = "CONECTAT! AI-ul procesează...";
+                const runAI = async () => { await selfie.send({image: v}); requestAnimationFrame(runAI); };
+                runAI();
+            });
+        });
+    }
 </script>
 </body>
 </html>
