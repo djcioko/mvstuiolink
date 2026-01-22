@@ -34,37 +34,3 @@
         <div class="panel"><h3>VUMETRU</h3><button class="btn btn-wait">LOGO</button></div>
         <div class="panel"><h3>SISTEM</h3><button class="btn btn-wait" onclick="document.documentElement.requestFullscreen()">FULLSCREEN</button></div>
     </div>
-
-<script>
-    const peer = new Peer('LAPTOP-MV-STUDIO'); 
-    const selfie = new SelfieSegmentation({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`});
-    selfie.setOptions({modelSelection: 1});
-
-    selfie.onResults(r => {
-        const can = document.getElementById('ai-canvas'), ctx = can.getContext('2d');
-        can.width = r.image.width; can.height = r.image.height;
-        ctx.save(); ctx.clearRect(0,0,can.width,can.height);
-        ctx.drawImage(r.segmentationMask, 0,0,can.width,can.height);
-        ctx.globalCompositeOperation = 'source-in';
-        ctx.drawImage(r.image, 0,0,can.width,can.height); ctx.restore();
-    });
-
-    function startReceiver() {
-        document.getElementById('stat-text').innerText = "RECEPTOR PORNIT. ID: LAPTOP-MV-STUDIO";
-        document.getElementById('btn-status').style.background = "#00ff44";
-        
-        peer.on('call', call => {
-            call.answer();
-            call.on('stream', stream => {
-                const v = document.getElementById('v-remote');
-                v.srcObject = stream;
-                v.play();
-                document.getElementById('stat-text').innerText = "CONECTAT! AI-ul procesează...";
-                const runAI = async () => { await selfie.send({image: v}); requestAnimationFrame(runAI); };
-                runAI();
-            });
-        });
-    }
-</script>
-</body>
-</html>
