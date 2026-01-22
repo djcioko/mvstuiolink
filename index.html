@@ -2,111 +2,71 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <title>MV STUDIO PRO - NINJA EDITION</title>
+    <title>MV STUDIO PRO - LIVE HUB</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
-    
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
-        :root { --main: #ffaa00; --msg-size: 26px; } 
+        :root { --main: #ffaa00; }
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
-        #viewport { position: relative; width: 100%; height: calc(100% - 140px); background: #111; overflow: hidden; }
-        #bg-v, #bg-i, #bg-s { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; z-index: 1; }
-        
-        /* Caseta unde va apărea camera decupată */
-        #cam-box { position: absolute; z-index: 10; cursor: move; display: none; top: 20px; right: 20px; }
-        #ai-canvas { width: 350px; border: 1px solid rgba(255,255,255,0.2); }
-        
-        /* Iframe-ul invizibil care trage semnalul de la telefon */
-        #ninja-frame { width: 1px; height: 1px; position: absolute; opacity: 0; pointer-events: none; }
-
-        #circle-box { position: absolute; z-index: 15; cursor: move; width: 250px; height: 250px; display: flex; align-items: center; justify-content: center; top: 10%; left: 30%; }
-        #radial-canvas { position: absolute; z-index: 16; pointer-events: none; }
-        #inner-circle { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #fff; background: #000; overflow: hidden; z-index: 17; display: flex; align-items: center; justify-content: center; }
-        #inner-img { width: 100%; height: 100%; object-fit: cover; display: none; }
-        #branding { position: absolute; z-index: 20; cursor: move; font-weight: 900; text-transform: uppercase; text-shadow: 2px 2px 10px #000; bottom: 50px; left: 40px; font-size: 40px; color: white; }
-        #msg-box { position: absolute; z-index: 999; background: rgba(0, 0, 0, 0.85); border-left: 6px solid var(--main); padding: 10px; border-radius: 0 10px 10px 0; min-width: 250px; cursor: move; display: none; top: 100px; left: 20px; }
-        
-        #controls { position: absolute; bottom: 0; width: 100%; height: 140px; background: #080808; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 4px; border-top: 1px solid #222; z-index: 1000; }
-        .panel { background: #111; padding: 4px; border-radius: 3px; border: 1px solid #1a1a1a; display: flex; flex-direction: column; gap: 2px; }
-        .panel h3 { font-size: 7px; color: #ffaa00; text-align: center; font-weight: 800; border-bottom: 1px solid #222; text-transform: uppercase; margin-bottom: 2px; }
-        .btn { width: 100%; padding: 3px; font-weight: bold; border-radius: 2px; text-transform: uppercase; font-size: 7px; cursor: pointer; border: none; }
+        #viewport { position: relative; width: 100%; height: calc(100% - 140px); background: #111; }
+        #cam-box { position: absolute; z-index: 10; top: 20px; right: 20px; }
+        #ai-canvas { width: 350px; border: 1px solid var(--main); }
+        #controls { position: absolute; bottom: 0; width: 100%; height: 140px; background: #080808; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 5px; border-top: 1px solid #222; }
+        .panel { background: #111; border: 1px solid #222; padding: 5px; display: flex; flex-direction: column; gap: 4px; }
+        .panel h3 { font-size: 8px; color: var(--main); text-align: center; text-transform: uppercase; margin-bottom: 2px; }
+        .btn { width: 100%; padding: 5px; font-weight: bold; border-radius: 4px; font-size: 8px; cursor: pointer; border: none; text-transform: uppercase; }
+        .btn-blue { background: #1e3a8a; color: white; }
+        .btn-orange { background: var(--main); color: black; }
         .st-off { background: #220a0a; color: #cc4444; }
         .st-on { background: #0a220a; color: #44cc44; }
-        .btn-blue { background: #1e3a8a; color: white; }
-        input[type="range"] { height: 2px; accent-color: #ffaa00; margin: 0; }
     </style>
 </head>
 <body>
 
 <div id="viewport">
-    <video id="bg-v" autoplay loop muted></video>
-    <img id="bg-i">
-    <img id="bg-s">
-    
     <div id="cam-box"><canvas id="ai-canvas"></canvas></div>
-    
-    <video id="v-hidden" autoplay playsinline crossorigin="anonymous" style="display:none"></video>
-    
-    <iframe id="ninja-frame" allow="camera;microphone;fullscreen;display-capture;"></iframe>
-
-    <div id="circle-box">
-        <canvas id="radial-canvas" width="400" height="400"></canvas>
-        <div id="inner-circle"><img id="inner-img"></div>
-    </div>
-    <div id="branding">STUDIO MV</div>
-    <div id="msg-box"><span id="msg-user">INVITAT</span><br><span id="msg-txt">Mesaj...</span></div>
+    <video id="v-remote" autoplay playsinline style="display:none"></video>
+    <div style="position:absolute; bottom:20px; left:20px; font-size:30px; font-weight:900;">STUDIO MV LINK</div>
 </div>
 
 <div id="controls">
-    <div class="panel"><h3>1. VIDEO</h3><button id="btn-v" class="btn st-off" onclick="tgL('bg-v', 'btn-v')">VIDEO: OFF</button><input type="file" id="up-v" class="hidden" onchange="loadM(this, 'bg-v', 'btn-v')"><button class="btn btn-blue" onclick="document.getElementById('up-v').click()">📁 UPLOAD</button></div>
-    <div class="panel"><h3>2. FOTO</h3><button id="btn-i" class="btn st-off" onclick="tgL('bg-i', 'btn-i')">FOTO: OFF</button><input type="file" id="up-i" class="hidden" onchange="loadM(this, 'bg-i', 'btn-i')"><button class="btn btn-blue" onclick="document.getElementById('up-i').click()">🖼️ UPLOAD</button></div>
-    <div class="panel"><h3>3. SLIDESHOW</h3><button id="btn-s" class="btn st-off" onclick="tgL('bg-s', 'btn-s')">SLIDE: OFF</button><input type="file" id="up-sld" class="hidden" webkitdirectory directory multiple onchange="loadFld(this)"><button class="btn btn-blue" onclick="document.getElementById('up-sld').click()">📂 FOLDER</button></div>
+    <div class="panel"><h3>1. VIDEO</h3><button class="btn btn-blue">UPLOAD VIDEO</button></div>
+    <div class="panel"><h3>2. FOTO</h3><button class="btn btn-blue">UPLOAD FOTO</button></div>
+    <div class="panel"><h3>3. SLIDE</h3><button class="btn btn-blue">FOLDER SLIDE</button></div>
     
     <div class="panel">
-        <h3>4. CAMERA NINJA</h3>
-        <button class="btn" style="background:#00ff44; color:black;" onclick="connectNinja()">🔗 SCAN & CONNECT</button>
-        <button id="btn-cam" class="btn st-off" onclick="tgC()">VIEW: OFF</button>
-        <label style="font-size:6px">SIZE</label>
-        <input type="range" min="150" max="800" value="350" oninput="document.getElementById('ai-canvas').style.width=this.value+'px'">
+        <h3>4. REMOTE CAMERA</h3>
+        <button id="btn-listen" class="btn btn-orange" onclick="startReceiver()">ACTIVATE RECEIVER</button>
+        <button id="btn-view" class="btn st-off">VIEW: OFF</button>
     </div>
     
-    <div class="panel"><h3>5. VUMETRU</h3><button id="btn-png" class="btn st-off" onclick="tgP()">LOGO: OFF</button><input type="file" id="up-logo" class="hidden" onchange="loadP(this)"><button class="btn btn-blue" onclick="document.getElementById('up-logo').click()">⬆️ UPLOAD</button></div>
-    <div class="panel"><h3>6. SISTEM</h3><input type="text" id="brand-in" placeholder="TEXT..." oninput="document.getElementById('branding').innerText=this.value"><button class="btn btn-blue" onclick="goFS()">FULL SCREEN</button></div>
+    <div class="panel"><h3>5. VUMETRU</h3><button class="btn btn-blue">UPLOAD PNG</button></div>
+    <div class="panel"><h3>6. SISTEM</h3><button class="btn btn-blue" onclick="document.documentElement.requestFullscreen()">FULL SCREEN</button></div>
 </div>
 
 <script>
-    // ID-ul tău unic pentru sesiune (poti sa-l schimbi daca vrei)
-    const STREAM_ID = "MV_STUDIO_" + Math.floor(Math.random()*999);
+    // ID FIX PENTRU RECEPTOR
+    const peer = new Peer('LAPTOP-MV-STUDIO'); 
 
-    function connectNinja() {
-        const ninjaUrl = `https://vdo.ninja/?view=${STREAM_ID}&autoplay&clean&transparent`;
-        const phoneUrl = `https://vdo.ninja/?push=${STREAM_ID}&autostart&back&clean`;
+    function startReceiver() {
+        alert("RECEPTOR ACTIVAT! Aștept semnalul de la telefon...");
+        document.getElementById('btn-listen').innerText = "LISTENING...";
+        document.getElementById('btn-listen').className = "btn st-on";
         
-        // 1. Punem receiver-ul in iframe
-        document.getElementById('ninja-frame').src = ninjaUrl;
-        
-        // 2. Îți dăm link-ul pentru telefon
-        console.log("Link pentru telefon: " + phoneUrl);
-        alert("SCANEAZĂ sau DESCHIDE pe TELEFON:\n\n" + phoneUrl);
-        window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(phoneUrl)}`, "QR", "width=350,height=350");
-
-        // 3. Așteptăm semnalul video în fundal
-        const checkVideo = setInterval(() => {
-            const frame = document.getElementById('ninja-frame');
-            try {
-                // Încercăm să prindem stream-ul din Ninja
-                // Notă: Ninja permite preluarea externă dacă e configurat corect
-                // Dacă nu merge direct, folosim fereastra de Ninja ca sursă
-            } catch(e){}
-        }, 1000);
-    }
-
-    // --- COD AI & MIXER (PĂSTRAT DIN VERSIUNEA TA) ---
-    function tgL(id, bId) {
-        document.querySelectorAll('#bg-v,#bg-i,#bg-s').forEach(e => e.style.display='none');
-        document.getElementById(id).style.display = 'block';
+        peer.on('call', call => {
+            call.answer();
+            call.on('stream', remoteStream => {
+                const v = document.getElementById('v-remote');
+                v.srcObject = remoteStream;
+                v.play();
+                document.getElementById('btn-view').className = "btn st-on";
+                document.getElementById('btn-view').innerText = "VIEW: ON";
+                // Pornim AI-ul pe imaginea primita
+                const pred = async () => { await selfie.send({image: v}); requestAnimationFrame(pred); }; 
+                pred();
+            });
+        });
     }
 
     const selfie = new SelfieSegmentation({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`});
@@ -119,19 +79,6 @@
         ctx.globalCompositeOperation = 'source-in';
         ctx.drawImage(r.image, 0,0,can.width,can.height); ctx.restore();
     });
-
-    // Pornim procesarea AI pe orice video vine în v-hidden
-    setInterval(() => {
-        const v = document.getElementById('v-hidden');
-        if (v.readyState >= 2) selfie.send({image: v});
-    }, 40);
-
-    function tgC() {
-        const b = document.getElementById('cam-box');
-        b.style.display = (b.style.display === 'block') ? 'none' : 'block';
-    }
-
-    function goFS() { document.documentElement.requestFullscreen(); }
 </script>
 </body>
 </html>
