@@ -2,35 +2,114 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <title>MV STUDIO - RECEPTOR ACTIV</title>
+    <title>MV STUDIO - NINJA AI MIXER</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
-        #viewport { position: relative; width: 100%; height: calc(100vh - 140px); background: #111; }
-        #cam-box { position: absolute; z-index: 10; top: 20px; right: 20px; }
-        #ai-canvas { width: 400px; border: 2px solid #ffaa00; border-radius: 10px; }
-        #controls { height: 140px; background: #080808; display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 10px; border-top: 1px solid #222; }
-        .panel { background: #111; border: 1px solid #222; padding: 5px; text-align: center; }
-        .btn { width: 100%; padding: 10px; font-weight: bold; font-size: 10px; cursor: pointer; border: none; text-transform: uppercase; border-radius: 5px; }
-        .btn-active { background: #ffaa00; color: #000; }
-        .btn-wait { background: #1e3a8a; color: white; }
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
+        #viewport { position: relative; width: 100%; height: calc(100% - 150px); background: #111; display: flex; align-items: center; justify-content: center; }
+        #cam-box { position: absolute; z-index: 10; cursor: move; }
+        #ai-canvas { width: 450px; border: 2px solid #ffaa00; background: #000; border-radius: 15px; }
+        
+        /* Iframe-ul Ninja - îl ținem vizibil mic pentru control, apoi îl ascundem */
+        #ninja-container { position: absolute; bottom: 160px; right: 10px; width: 200px; height: 150px; border: 1px solid #333; z-index: 5; }
+        #ninja-frame { width: 100%; height: 100%; border: none; }
+
+        #controls { position: absolute; bottom: 0; width: 100%; height: 150px; background: #0a0a0a; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; border-top: 2px solid #222; }
+        .panel { background: #111; border: 1px solid #333; padding: 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px; }
+        input { background: #000; border: 1px solid #444; color: #0f0; padding: 8px; font-size: 11px; border-radius: 4px; }
+        .btn { padding: 10px; font-weight: bold; cursor: pointer; border: none; border-radius: 5px; text-transform: uppercase; font-size: 11px; }
+        .btn-green { background: #00ff44; color: #000; }
+        .btn-blue { background: #1e3a8a; color: #fff; }
     </style>
 </head>
 <body>
-    <div id="viewport">
-        <div id="cam-box"><canvas id="ai-canvas"></canvas></div>
-        <video id="v-remote" autoplay playsinline style="display:none"></video>
-        <div style="position:absolute; bottom:30px; left:30px; font-size:50px; font-weight:900; color:white; text-shadow: 2px 2px 10px #000;">STUDIO MV LINK</div>
+
+<div id="viewport">
+    <div id="cam-box"><canvas id="ai-canvas"></canvas></div>
+    <div id="branding" style="position:absolute; bottom:20px; left:20px; font-size:40px; font-weight:900; opacity:0.5;">MV STUDIO AI</div>
+</div>
+
+<div id="ninja-container">
+    <iframe id="ninja-frame" allow="camera;microphone;fullscreen;display-capture;"></iframe>
+</div>
+
+<div id="controls">
+    <div class="panel">
+        <h3 style="color:#ffaa00; font-size:10px;">1. CONECTARE NINJA</h3>
+        <input type="text" id="ninja-url" placeholder="Paste link-ul VDO.Ninja aici...">
+        <button class="btn btn-green" onclick="loadNinja()">CONECTEAZĂ CAMERA</button>
     </div>
-    <div id="controls">
-        <div class="panel"><h3>VIDEO</h3><button class="btn btn-wait">UPLOAD</button></div>
-        <div class="panel"><h3>FOTO</h3><button class="btn btn-wait">UPLOAD</button></div>
-        <div class="panel"><h3>CAMERA REMOTE</h3>
-            <button id="btn-status" class="btn btn-active" onclick="startReceiver()">1. ACTIVEAZĂ RECEPTOR</button>
-        </div>
-        <div class="panel"><h3>STATUS</h3><div id="stat-text" style="font-size:10px; color:#ffaa00;">Așteptare...</div></div>
-        <div class="panel"><h3>VUMETRU</h3><button class="btn btn-wait">LOGO</button></div>
-        <div class="panel"><h3>SISTEM</h3><button class="btn btn-wait" onclick="document.documentElement.requestFullscreen()">FULLSCREEN</button></div>
+    
+    <div class="panel">
+        <h3 style="color:#ffaa00; font-size:10px;">2. CONTROL AI</h3>
+        <button class="btn btn-blue" onclick="startAI()">PORNEȘTE DECUPAREA</button>
+        <label style="font-size:9px;">MĂRIME</label>
+        <input type="range" min="200" max="800" value="450" oninput="document.getElementById('ai-canvas').style.width=this.value+'px'">
     </div>
+
+    <div class="panel">
+        <h3 style="color:#ffaa00; font-size:10px;">3. MODALITATE</h3>
+        <button class="btn btn-blue" onclick="document.documentElement.requestFullscreen()">FULL SCREEN</button>
+        <button class="btn btn-blue" onclick="toggleNinja()">ASCUNDE/ARATĂ SURSA</button>
+    </div>
+
+    <div class="panel">
+        <h3 style="color:#ffaa00; font-size:10px;">4. INFO</h3>
+        <p style="font-size:9px; color:#666;">Pas 1: Deschide VDO.Ninja pe telefon.<br>Pas 2: Pune link-ul "view" aici.<br>Pas 3: Apasă Pornește Decuparea.</p>
+    </div>
+</div>
+
+<script>
+    function loadNinja() {
+        let url = document.getElementById('ninja-url').value;
+        if(!url.includes('autoplay')) url += "&autoplay=1&clean=1&transparent=1";
+        document.getElementById('ninja-frame').src = url;
+    }
+
+    function toggleNinja() {
+        const c = document.getElementById('ninja-container');
+        c.style.display = c.style.display === 'none' ? 'block' : 'none';
+    }
+
+    const selfie = new SelfieSegmentation({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`});
+    selfie.setOptions({modelSelection: 1});
+
+    selfie.onResults(r => {
+        const can = document.getElementById('ai-canvas'), ctx = can.getContext('2d');
+        can.width = r.image.width; can.height = r.image.height;
+        ctx.save(); ctx.clearRect(0,0,can.width,can.height);
+        ctx.drawImage(r.segmentationMask, 0,0,can.width,can.height);
+        ctx.globalCompositeOperation = 'source-in';
+        ctx.drawImage(r.image, 0,0,can.width,can.height); ctx.restore();
+    });
+
+    async function startAI() {
+        // Căutăm video-ul din interiorul Iframe-ului Ninja
+        const iframe = document.getElementById('ninja-frame');
+        // NOTĂ: Pentru a funcționa decuparea directă din iframe, ambele trebuie să fie pe HTTPS.
+        // Dacă browserul blochează accesul la iframe, vom folosi funcția de Screen Capture pe fereastra Ninja.
+        alert("AI-ul este gata. Dacă imaginea nu apare, asigură-te că link-ul Ninja este corect.");
+        
+        // Loop de captură
+        async function detect() {
+            // Încercăm să procesăm ce se vede în iframe
+            // Pentru securitate, majoritatea browserelor cer ca Ninja să ruleze și el.
+            // O metodă sigură: vom cere permisiune de "Window Capture"
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const v = document.createElement('video');
+            v.srcObject = stream;
+            v.play();
+            v.onloadedmetadata = () => {
+                const run = async () => {
+                    await selfie.send({image: v});
+                    requestAnimationFrame(run);
+                };
+                run();
+            };
+        }
+        detect();
+    }
+</script>
+</body>
+</html>
